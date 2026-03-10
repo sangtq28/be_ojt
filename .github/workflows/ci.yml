@@ -1,0 +1,47 @@
+name: CI - backend
+
+on:
+  pull_request:
+    branches: ["master"]
+  push:
+    branches: ["master"]
+jobs:
+  backend-ci:
+    name: Run Backend CI Pipeline
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: ojt_db
+          POSTGRES_USER: admin
+          POSTGRES_PASSWORD: 280403
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: maven
+      - name: Build with Maven
+        run: mvn clean package -DskipTests
+      - name: Run tests
+        run: mvn test
+        env:
+          DB_USERNAME: ${{ secrets.DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/ojt_db
+
+
+
